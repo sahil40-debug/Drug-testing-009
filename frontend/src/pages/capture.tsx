@@ -5,13 +5,17 @@ import TestInformation from "../components/Capture/TestInformation";
 import CameraPreview from "../components/Capture/CameraPreview";
 import CaptureControls from "../components/Capture/CaptureControls";
 import ImageQualityPanel from "../components/Capture/ImageQualityPanel";
-import ReferenceCardGuide from "../components/Capture/ReferenceCardGuide";
 import CaptureStatus from "../components/Capture/CaptureStatus";
 import CaptureGuidance from "../components/Capture/CaptureGuidance";
+import ReferenceColorSelector from "../components/Capture/ReferenceColorSelector";
+import type { ReferenceColor } from "../components/Capture/ReferenceColorSelector";
 
 function Capture() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [selectedColor, setSelectedColor] =
+  useState<ReferenceColor | null>(null);
 
   // This function sends the image to our FastAPI backend
   const handleAnalyze = async () => {
@@ -27,7 +31,12 @@ function Capture() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ image_data: capturedImage }),
+        body: JSON.stringify({
+  image_data: capturedImage,
+  reference_color: selectedGroup,
+  reference_shade: selectedColor?.name ?? null,
+  reference_color_value: selectedColor?.value ?? null,
+}),
       });
 
       const data = await response.json();
@@ -68,6 +77,14 @@ function Capture() {
         <div className="mb-6">
           <TestInformation />
         </div>
+        <div className="mb-6">
+          <ReferenceColorSelector
+          selectedGroup={selectedGroup}
+          selectedColor={selectedColor}
+          setSelectedGroup={setSelectedGroup}
+          setSelectedColor={setSelectedColor} 
+          />
+        </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
           <section className="xl:col-span-2">
@@ -97,7 +114,6 @@ function Capture() {
           </section>
 
           <aside className="space-y-6">
-            <ReferenceCardGuide />
             <ImageQualityPanel />
             <CaptureGuidance />
           </aside>
