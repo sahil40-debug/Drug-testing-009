@@ -28,6 +28,7 @@ def analyze_image_quality(image_data: str):
         return {
             "success": False,
             "quality": "poor",
+            "quality_score": 0,
             "message": "Could not read image file.",
         }
 
@@ -81,29 +82,50 @@ def analyze_image_quality(image_data: str):
     )
 
     # ----------------------------------------------
+    # Quality score
+    # ----------------------------------------------
+    # These are initial weights.
+    # We will calibrate them later using real images.
+
+    resolution_score = 20 if resolution_ok else 0
+    sharpness_score = 30 if sharpness_ok else 0
+    brightness_quality_score = 20 if brightness_ok else 0
+    exposure_score = 30 if exposure_ok else 0
+
+    quality_score = (
+        resolution_score
+        + sharpness_score
+        + brightness_quality_score
+        + exposure_score
+    )
+
+    # ----------------------------------------------
     # Overall quality
     # ----------------------------------------------
 
-    checks = {
-        "resolution": resolution_ok,
-        "sharpness": sharpness_ok,
-        "brightness": brightness_ok,
-        "exposure": exposure_ok,
-    }
-
-    passed_checks = sum(checks.values())
-
-    quality = "acceptable" if passed_checks == 4 else "poor"
+    if quality_score >= 80:
+        quality = "good"
+    elif quality_score >= 60:
+        quality = "acceptable"
+    else:
+        quality = "poor"
 
     # ----------------------------------------------
     # User message
     # ----------------------------------------------
 
-    if quality == "acceptable":
+    if quality == "good":
 
         message = (
             "Image quality is good and suitable "
             "for further analysis."
+        )
+
+    elif quality == "acceptable":
+
+        message = (
+            "Image quality is acceptable, but "
+            "improvement may increase reliability."
         )
 
     else:
@@ -134,11 +156,13 @@ def analyze_image_quality(image_data: str):
     return {
         "success": True,
         "quality": quality,
+        "quality_score": quality_score,
         "message": message,
 
         "checks": {
             "resolution": {
                 "passed": resolution_ok,
+                "score": resolution_score,
                 "width": width,
                 "height": height,
             },
@@ -146,11 +170,13 @@ def analyze_image_quality(image_data: str):
             "sharpness": {
                 "passed": sharpness_ok,
                 "score": round(blur_score, 1),
+                "quality_points": sharpness_score,
             },
 
             "brightness": {
                 "passed": brightness_ok,
                 "score": round(brightness_score, 1),
+                "quality_points": brightness_quality_score,
             },
 
             "exposure": {
@@ -161,6 +187,7 @@ def analyze_image_quality(image_data: str):
                 "overexposed_percentage": round(
                     overexposed_pixels * 100, 1
                 ),
+                "quality_points": exposure_score,
             },
         },
     }
